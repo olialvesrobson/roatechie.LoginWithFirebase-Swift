@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Firebase
 
 struct ContentView: View {
     
@@ -29,20 +30,42 @@ struct ContentView: View {
                     .background(fieldColor)
                     .cornerRadius(5.0)
                     .padding(.bottom, 20)
+                    .frame(width: 250, height: 50, alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/)
                 SecureField("Password", text: $password)
                     .padding()
                     .background(fieldColor)
                     .cornerRadius(5.0)
                     .padding(.bottom, 20)
+                    .frame(width: 250, height: /*@START_MENU_TOKEN@*/100/*@END_MENU_TOKEN@*/, alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/)
                 Spacer()
+                
                 Button(action: {
-                    print("User \($email) is logged!")
+
+                    if isUserLoggedIn() {
+                      // Show logout page
+                        signout()
+                    } else {
+                      // Show login page
+                        signin(email: email, password: password)
+                    }
+                    
+                    
                 }) {
-                    Text("Sign in")
-                        .font(.largeTitle)
+                    if isUserLoggedIn() {
+                      // Show logout page
+                        Text( "Sign Out" )
+                                .font(.largeTitle)
+                    } else {
+                      // Show login page
+                        Text( "Sign In" )
+                                .font(.largeTitle)
+                    }
+                    
+                    
+                    
                 }.padding()
                 .foregroundColor(.white)
-                .background(Color.blue)
+                .background(bkgColor ())
                 .cornerRadius(25)
                 
                 Button(action: {}
@@ -63,6 +86,52 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
+    }
+}
+
+func isUserLoggedIn() -> Bool {
+  return Auth.auth().currentUser != nil
+}
+
+func signin (email: String, password: String) {
+    Auth.auth().signIn(withEmail: email, password: password) { (authResult, error) in
+        if let error = error as NSError? {
+        switch AuthErrorCode(rawValue: error.code) {
+            case .operationNotAllowed:
+              // Error: Indicates that email and password accounts are not enabled. Enable them in the Auth section of the Firebase console.
+                print("operationNotAllowed ", error.code)
+            case .userDisabled:
+              // Error: The user account has been disabled by an administrator.
+                print("userDisabled ", error.code)
+            case .wrongPassword:
+              // Error: The password is invalid or the user does not have a password.
+                print("wrongPassword ", error.code)
+            case .invalidEmail:
+              // Error: Indicates the email address is malformed.
+                print("invalidEmail ", error.code)
+            default:
+                print("Error: \(error.localizedDescription)")
+        }
+      } else {
+        print("User signs in successfully")
+        let userInfo = Auth.auth().currentUser
+        print(userInfo?.displayName ?? "")
+      }
+    }
+}
+
+func bkgColor () -> Color {
+    if (isUserLoggedIn() ) {
+        return Color.red
+    } else {
+        return Color.blue
+    }
+}
+func signout () {
+    do {
+      try Auth.auth().signOut()
+    } catch {
+      print("Sign out error")
     }
 }
 
